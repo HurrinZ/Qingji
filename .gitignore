@@ -1,0 +1,16 @@
+.gradle/
+.kotlin/
+**/build/
+.tools/
+.android-build-tools/
+local.properties
+signing.properties
+private-signing/
+*.p12
+*.jks
+*.keystore
+*.db
+*.db-shm
+*.db-wal
+.idea/
+.DS_Store

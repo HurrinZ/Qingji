@@ -1,0 +1,53 @@
+{
+  "checks": [
+    {
+      "name": "初始收起",
+      "passed": true
+    },
+    {
+      "name": "左滑展开两按钮",
+      "passed": true
+    },
+    {
+      "name": "整段左滑不自动删除",
+      "passed": true
+    },
+    {
+      "name": "右滑收起",
+      "passed": true
+    },
+    {
+      "name": "纵向滑动不展开",
+      "passed": true
+    },
+    {
+      "name": "最多一行展开",
+      "passed": true
+    },
+    {
+      "name": "备注直接修改",
+      "passed": true
+    },
+    {
+      "name": "备注不改变金额余额",
+      "passed": true
+    },
+    {
+      "name": "取消备注保留原文",
+      "passed": true
+    },
+    {
+      "name": "删除立即移出列表",
+      "passed": true
+    },
+    {
+      "name": "删除还原余额",
+      "passed": true
+    },
+    {
+      "name": "撤销恢复账单余额备注",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

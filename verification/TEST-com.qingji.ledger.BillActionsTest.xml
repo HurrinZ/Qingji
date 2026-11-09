@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.qingji.ledger.BillActionsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-09T07:04:38" hostname="DESKTOP-U4MM0EA" time="0.012">
+  <properties/>
+  <testcase name="incomeAndRefundDeletionReverseCorrectAmounts" classname="com.qingji.ledger.BillActionsTest" time="0.002"/>
+  <testcase name="legacyAndUnassignedBillsCanBeDeletedWithoutMovingBalance" classname="com.qingji.ledger.BillActionsTest" time="0.0"/>
+  <testcase name="notePatchChangesOnlyNoteAndAuditFields" classname="com.qingji.ledger.BillActionsTest" time="0.001"/>
+  <testcase name="deletionHidesBillReversesBalanceAndRetainsUndo" classname="com.qingji.ledger.BillActionsTest" time="0.0"/>
+  <testcase name="missingDeletedAndLinkedRefundProtectionRemain" classname="com.qingji.ledger.BillActionsTest" time="0.002"/>
+  <testcase name="notePatchCannotResurrectDeletedBillOrExceedLimit" classname="com.qingji.ledger.BillActionsTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

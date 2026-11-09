@@ -1,0 +1,16 @@
+package com.qingji.ledger
+
+import org.junit.Assert.*
+import org.junit.Test
+import org.json.JSONObject
+import java.time.LocalDate
+
+class BackupCodecTest {
+    private fun sample():Snapshot { val cats=defaultCategories();val e=Entry(id="original",type=EXPENSE,amount=10000,categoryId="expense-0",date="2026-11-01");val r=Entry(id="refund",type=REFUND,amount=3000,categoryId="expense-0",date="2026-11-09",refundOf=e.id);return Snapshot(listOf(e,r),cats,listOf(Budget("2026-11","",500000)),listOf(Goal(id="g",title="旅行",target=600000)),listOf(GoalEvent(id="g1",goalId="g",amount=10000,date="2026-11-01",createdAt=1),GoalEvent(id="g2",goalId="g",amount=-1000,date="2026-11-02",createdAt=2)),Settings(),true) }
+    @Test fun completeRoundTrip(){val s=sample();val restored=BackupCodec.decode(BackupCodec.encode(s));assertEquals(s.entries,restored.entries);assertEquals(s.categories,restored.categories);assertEquals(s.budgets,restored.budgets);assertEquals(s.goals,restored.goals);assertEquals(s.events,restored.events);assertEquals(9000L,restored.progress("g"))}
+    @Test fun futureVersionIsRejected(){val root=JSONObject(BackupCodec.encode(sample())).put("schemaVersion",999);assertThrows(IllegalArgumentException::class.java){BackupCodec.decode(root.toString())}}
+    @Test fun fractionalCentAndRefundOverflowRejected(){val root=JSONObject(BackupCodec.encode(sample()));root.getJSONArray("entries").getJSONObject(0).put("amount",10000.5);assertThrows(IllegalArgumentException::class.java){BackupCodec.decode(root.toString())};val overflow=JSONObject(BackupCodec.encode(sample()));overflow.getJSONArray("entries").getJSONObject(1).put("amount",10001);assertThrows(IllegalArgumentException::class.java){BackupCodec.decode(overflow.toString())}}
+    @Test fun duplicateIdsAndBrokenReferencesRejected(){val root=JSONObject(BackupCodec.encode(sample()));val entries=root.getJSONArray("entries");entries.put(entries.getJSONObject(0));assertThrows(IllegalArgumentException::class.java){BackupCodec.decode(root.toString())};val broken=JSONObject(BackupCodec.encode(sample()));broken.getJSONArray("entries").getJSONObject(1).put("refundOf","missing");assertThrows(IllegalArgumentException::class.java){BackupCodec.decode(broken.toString())}}
+    @Test fun savingsCannotBeNegative(){val root=JSONObject(BackupCodec.encode(sample()));root.getJSONArray("events").getJSONObject(1).put("amount",-20000);assertThrows(IllegalArgumentException::class.java){BackupCodec.decode(root.toString())}}
+    @Test fun csvEscapesQuotesNewlinesAndFormula(){val s=sample().let{it.copy(entries=it.entries.map{e->e.copy(note="=SUM(A1)\n\"quoted\"")})};val csv=BackupCodec.csv(s,DateRange(LocalDate.of(2026,11,1),LocalDate.of(2026,11,30)));assertTrue(csv.startsWith("\uFEFF"));assertTrue(csv.contains("'=SUM(A1)"));assertTrue(csv.contains("\"\"quoted\"\""))}
+}

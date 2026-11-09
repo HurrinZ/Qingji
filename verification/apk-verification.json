@@ -1,0 +1,28 @@
+{
+  "version": "1.3.1",
+  "versionCode": 5,
+  "apk_bytes": 1575158,
+  "apk_sha256": "9604c7355db1f8fce721ce8d36cbec0823bc2e657247a5debda76e936b3387af",
+  "signer_sha256": "47072b2672331990e2d715250636cc978951b2ba5b99d3924147db0b284e67ca",
+  "same_signer_as_1_0": true,
+  "jvm_tests": 41,
+  "test_failures": 0,
+  "lint_errors": 0,
+  "lint_findings": 14,
+  "migration": {
+    "status": "passed",
+    "sql_statements": 11,
+    "tables_validated": 8,
+    "legacy_amount_preserved": true,
+    "legacy_asset_id": null,
+    "legacy_affects_balance": false,
+    "new_accounts_invented": false,
+    "integrity_check": "ok",
+    "limitation": "Desktop SQLite structural/data test; Android Room migration instrumentation is provided but not device-executed."
+  },
+  "build": {
+    "code": 0,
+    "finished": "2026-11-09T07:07:52.444Z"
+  },
+  "device_test_status": "not run: no available Android device; prior emulator startup failed"
+}

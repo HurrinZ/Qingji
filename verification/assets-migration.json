@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "sql_statements": 11,
+  "tables_validated": 8,
+  "legacy_amount_preserved": true,
+  "legacy_asset_id": null,
+  "legacy_affects_balance": false,
+  "new_accounts_invented": false,
+  "integrity_check": "ok",
+  "limitation": "Desktop SQLite structural/data test; Android Room migration instrumentation is provided but not device-executed."
+}

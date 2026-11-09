@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.qingji.ledger.LedgerLogicTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-09T07:04:38" hostname="DESKTOP-U4MM0EA" time="0.439">
+  <properties/>
+  <testcase name="reminderSkipsPastTimeAndHandlesWeekdays" classname="com.qingji.ledger.LedgerLogicTest" time="0.041"/>
+  <testcase name="centsNeverUseFloatingPoint" classname="com.qingji.ledger.LedgerLogicTest" time="0.002"/>
+  <testcase name="leapYearAndMondayWeek" classname="com.qingji.ledger.LedgerLogicTest" time="0.011"/>
+  <testcase name="currentMonthUsesSameDayCountAndFullMonthUsesFullPreviousMonth" classname="com.qingji.ledger.LedgerLogicTest" time="0.0"/>
+  <testcase name="refundsAreNegativeSpendingAndSavingsAreSeparate" classname="com.qingji.ledger.LedgerLogicTest" time="0.001"/>
+  <testcase name="fiftyThousandEntriesAggregateCorrectly" classname="com.qingji.ledger.LedgerLogicTest" time="0.379"/>
+  <testcase name="defaultBudgetNeverOverridesExplicitMonth" classname="com.qingji.ledger.LedgerLogicTest" time="0.004"/>
+  <system-out><![CDATA[50k aggregate milliseconds=53
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

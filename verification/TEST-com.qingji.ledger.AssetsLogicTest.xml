@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.qingji.ledger.AssetsLogicTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-11-09T07:04:38" hostname="DESKTOP-U4MM0EA" time="0.076">
+  <properties/>
+  <testcase name="editingAndSwitchingAccountNeverDoubleDebit" classname="com.qingji.ledger.AssetsLogicTest" time="0.006"/>
+  <testcase name="zeroBalanceInputAndRecentDefault" classname="com.qingji.ledger.AssetsLogicTest" time="0.001"/>
+  <testcase name="calibrationIsAOneTimeDifferenceNotIncome" classname="com.qingji.ledger.AssetsLogicTest" time="0.011"/>
+  <testcase name="linkedHistoricalRecordDoesNotDebit" classname="com.qingji.ledger.AssetsLogicTest" time="0.0"/>
+  <testcase name="transferEditDeleteAndTotals" classname="com.qingji.ledger.AssetsLogicTest" time="0.001"/>
+  <testcase name="fullDesignExampleBalancesAndStatistics" classname="com.qingji.ledger.AssetsLogicTest" time="0.001"/>
+  <testcase name="negativeBalanceIsVisibleAndOverflowIsRejected" classname="com.qingji.ledger.AssetsLogicTest" time="0.002"/>
+  <testcase name="assetBackupRoundTrip" classname="com.qingji.ledger.AssetsLogicTest" time="0.024"/>
+  <testcase name="archivedNonZeroAccountBackupIsRejected" classname="com.qingji.ledger.AssetsLogicTest" time="0.004"/>
+  <testcase name="versionOneBackupHasNoImplicitAssetsOrBalanceEffects" classname="com.qingji.ledger.AssetsLogicTest" time="0.006"/>
+  <testcase name="badAssetReferencesAndSelfTransfersAreRejected" classname="com.qingji.ledger.AssetsLogicTest" time="0.014"/>
+  <testcase name="deleteAndUndoRestoreEffects" classname="com.qingji.ledger.AssetsLogicTest" time="0.001"/>
+  <testcase name="incomeAndUnassignedIncomeAreDifferent" classname="com.qingji.ledger.AssetsLogicTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

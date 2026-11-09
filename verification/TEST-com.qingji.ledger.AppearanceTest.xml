@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.qingji.ledger.AppearanceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-09T07:04:38" hostname="DESKTOP-U4MM0EA" time="0.202">
+  <properties/>
+  <testcase name="keypadRestrictsToExistingMoneyLimits" classname="com.qingji.ledger.AppearanceTest" time="0.087"/>
+  <testcase name="allPresetsAndEdgeCustomColorsHaveReadableText" classname="com.qingji.ledger.AppearanceTest" time="0.022"/>
+  <testcase name="themePersistsThroughBackupAndOldBackupsUseDefault" classname="com.qingji.ledger.AppearanceTest" time="0.08"/>
+  <testcase name="decimalKeypadNeverRoundsMoney" classname="com.qingji.ledger.AppearanceTest" time="0.001"/>
+  <testcase name="invalidBackupColorRejected" classname="com.qingji.ledger.AppearanceTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

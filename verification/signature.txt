@@ -1,0 +1,17 @@
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+Signer #1 certificate DN: CN=QingJi Personal Build, OU=Personal, O=QingJi, L=Private, ST=Private, C=CN
+Signer #1 certificate SHA-256 digest: 47072b2672331990e2d715250636cc978951b2ba5b99d3924147db0b284e67ca
+Signer #1 certificate SHA-1 digest: b1e0916a3502696ee7b354a6f25b67204093855e
+Signer #1 certificate MD5 digest: 7e63ae11e77f1b8cc3bb41c76c690d3e
+Signer #1 key algorithm: RSA
+Signer #1 key size (bits): 3072
+Signer #1 public key SHA-256 digest: 867bcd15511067c91606a3ee5f51af41c9d500ca6218ec2900d1afc7af5405ce
+Signer #1 public key SHA-1 digest: 1fbbb9d1fb3b2aa9a5687bd2fc067733b6c8b431
+Signer #1 public key MD5 digest: 52f311f05e315bae9ffc4e5249996003

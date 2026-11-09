@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.qingji.ledger.BackupCodecTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-09T07:04:38" hostname="DESKTOP-U4MM0EA" time="0.075">
+  <properties/>
+  <testcase name="futureVersionIsRejected" classname="com.qingji.ledger.BackupCodecTest" time="0.004"/>
+  <testcase name="csvEscapesQuotesNewlinesAndFormula" classname="com.qingji.ledger.BackupCodecTest" time="0.016"/>
+  <testcase name="savingsCannotBeNegative" classname="com.qingji.ledger.BackupCodecTest" time="0.016"/>
+  <testcase name="completeRoundTrip" classname="com.qingji.ledger.BackupCodecTest" time="0.006"/>
+  <testcase name="fractionalCentAndRefundOverflowRejected" classname="com.qingji.ledger.BackupCodecTest" time="0.007"/>
+  <testcase name="duplicateIdsAndBrokenReferencesRejected" classname="com.qingji.ledger.BackupCodecTest" time="0.024"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

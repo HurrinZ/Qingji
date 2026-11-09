@@ -1,0 +1,45 @@
+{
+  "checks": [
+    {
+      "name": "金额输入与保存可用",
+      "passed": true
+    },
+    {
+      "name": "微信品牌矢量",
+      "passed": true
+    },
+    {
+      "name": "键盘保存位于面板内",
+      "passed": true
+    },
+    {
+      "name": "备注按需编辑",
+      "passed": true
+    },
+    {
+      "name": "账户选择显示支付宝图标",
+      "passed": true
+    },
+    {
+      "name": "示例保存并关闭",
+      "passed": true
+    },
+    {
+      "name": "0元账单禁用保存",
+      "passed": true
+    },
+    {
+      "name": "自动命名避免重复",
+      "passed": true
+    },
+    {
+      "name": "新增资产允许0余额",
+      "passed": true
+    },
+    {
+      "name": "同账户转账禁用保存",
+      "passed": true
+    }
+  ],
+  "passed": true
+}
