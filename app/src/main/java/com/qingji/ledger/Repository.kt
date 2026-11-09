@@ -24,8 +24,21 @@ class SettingsStore(private val context: Context) {
     private val skip = booleanPreferencesKey("skip")
     private val revision = longPreferencesKey("reminderRevision")
     private val sent = stringPreferencesKey("lastSentDate")
-    val flow: Flow<Settings> = context.settingsStore.data.map { p -> Settings(p[theme] ?: "SYSTEM", p[enabled] ?: false, p[time] ?: "21:30", (p[days] ?: (1..7).map { it.toString() }.toSet()).mapNotNull { it.toIntOrNull() }.toSet(), p[skip] ?: true, p[revision] ?: 1L, p[sent] ?: "",normalizeAccent(p[accent]?:"SUN")) }
-    suspend fun set(settings: Settings) { context.settingsStore.edit { p -> p[theme] = settings.theme; p[accent]=normalizeAccent(settings.accent);p[enabled] = settings.enabled; p[time] = settings.time; p[days] = settings.days.map { it.toString() }.toSet(); p[skip] = settings.skip; p[revision] = settings.reminderRevision; p[sent] = settings.lastSentDate } }
+    private val budgetExcludeCredit = booleanPreferencesKey("budgetExcludeCredit")
+    private val budgetExcludedAssets = stringSetPreferencesKey("budgetExcludedAssets")
+    val flow: Flow<Settings> = context.settingsStore.data.map { p -> Settings(
+        theme = p[theme] ?: "SYSTEM",
+        enabled = p[enabled] ?: false,
+        time = p[time] ?: "21:30",
+        days = (p[days] ?: REMINDER_ALL_DAYS.map { it.toString() }.toSet()).mapNotNull { it.toIntOrNull() }.toSet(),
+        skip = p[skip] ?: true,
+        reminderRevision = p[revision] ?: 1L,
+        lastSentDate = p[sent] ?: "",
+        accent = normalizeAccent(p[accent]?:"SUN"),
+        budgetExcludeCredit = p[budgetExcludeCredit] ?: true,
+        budgetExcludedAssets = p[budgetExcludedAssets] ?: emptySet()
+    ) }
+    suspend fun set(settings: Settings) { context.settingsStore.edit { p -> p[theme] = settings.theme; p[accent]=normalizeAccent(settings.accent);p[enabled] = settings.enabled; p[time] = settings.time; p[days] = settings.days.map { it.toString() }.toSet(); p[skip] = settings.skip; p[revision] = settings.reminderRevision; p[sent] = settings.lastSentDate; p[budgetExcludeCredit] = settings.budgetExcludeCredit; p[budgetExcludedAssets] = settings.budgetExcludedAssets } }
     suspend fun update(transform: (Settings) -> Settings) { updateMutex.withLock { set(transform(flow.first())) } }
 }
 
@@ -133,4 +146,5 @@ class LedgerViewModel(app: Application) : AndroidViewModel(app) {
     }}
     fun removeGoal(goal: Goal) { action { val old = repo.removeGoal(goal.id); notices.emit(Notice("目标已删除") { repo.undoGoal(old) }) } }
     fun updateSettings(transform: (Settings) -> Settings) { action { repo.settings.update { transform(it).copy(reminderRevision = System.currentTimeMillis()) }; ReminderScheduler.schedule(getApplication(), repo.settings.flow.first()) } }
+    fun updatePreferences(transform: (Settings) -> Settings) { action { repo.settings.update(transform) } }
 }

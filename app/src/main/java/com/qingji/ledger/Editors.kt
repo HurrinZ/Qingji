@@ -79,12 +79,31 @@ import java.time.*
 @Composable fun BudgetEditor(month:YearMonth,scopeId:String,s:Snapshot,vm:LedgerViewModel,onDismiss:()->Unit){
     var scope by rememberSaveable{mutableStateOf(if(scopeId=="select")s.categories.firstOrNull{it.type==EXPENSE&&!it.archived}?.id?:"" else scopeId)}
     var amount by rememberSaveable{mutableStateOf(s.budget(month.toString(),scope)?.let{money(it.limit)}?:"")};var asDefault by rememberSaveable{mutableStateOf(false)}
+    val settings=s.settings;val excluded=s.budgetExcludedAssetIds();val activeAssets=s.assets.filter{!it.archived}
+    val creditCount=activeAssets.count{isCreditAsset(it.kind)}
     EditorSheet("${month.monthValue}月预算",onDismiss){
         if(scopeId=="select")FlowRow(horizontalArrangement=Arrangement.spacedBy(7.dp)){s.categories.filter{it.type==EXPENSE&&!it.archived}.forEach{c->FilterChip(c.id==scope,onClick={scope=c.id;amount=s.budget(month.toString(),scope)?.let{money(it.limit)}?:""},label={Text(c.name)})}}
         else Hint(if(scope.isEmpty())"总预算" else s.category(scope)?.name?:"分类预算")
         OutlinedTextField(amount,{if(it.length<=12)amount=it},Modifier.fillMaxWidth(),label={Text("预算金额（元）")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),singleLine=true)
         Row{Checkbox(asDefault,{asDefault=it});TextButton(onClick={asDefault=!asDefault}){Text("同时作为以后月份的默认预算")}}
         Hint("已有单独设置的月份不受默认预算影响。总预算与分类预算分别统计。")
+        HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant.copy(alpha=.4f))
+        Heading("不计入预算的账户")
+        Hint("信用卡、花呗等信贷支付的支出默认排除，避免与日后还款重复计算。排除规则对所有月份和分类预算生效，只改变预算口径，不改动账本记录。")
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
+            Column(Modifier.weight(1f)){Text("自动排除信贷账户");Hint("当前 $creditCount 个：信用卡 / 花呗 / 信用支付")}
+            Switch(settings.budgetExcludeCredit,{value->vm.updatePreferences{it.copy(budgetExcludeCredit=value)}})
+        }
+        if(activeAssets.isEmpty())Hint("还没有资产账户。可在资产页添加信用卡或花呗，其支出会自动排除。")
+        activeAssets.forEach{a->
+            val locked=settings.budgetExcludeCredit&&isCreditAsset(a.kind)
+            val checked=locked||a.id in settings.budgetExcludedAssets
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
+                Row(Modifier.weight(1f),verticalAlignment=Alignment.CenterVertically){AssetBadge(a.kind,24.dp);Spacer(Modifier.width(9.dp));Column{Text(a.name,maxLines=1);Hint(ASSET_KINDS[a.kind]?:"其他")}}
+                Checkbox(checked,onCheckedChange={value->vm.updatePreferences{st->st.copy(budgetExcludedAssets=if(value)st.budgetExcludedAssets+a.id else st.budgetExcludedAssets-a.id)}},enabled=!locked)
+            }
+        }
+        Hint(if(excluded.isEmpty())"当前没有排除任何账户，预算按全部支出统计。" else "当前共排除 ${excluded.size} 个账户；勾选后立即生效，无需保存预算。")
         SubmitButton(done={onDismiss();vm.notify("预算已保存")}){require(scopeId!="select"||scope.isNotBlank()){ "请选择分类" };vm.repo.saveBudget(month.toString(),scope,requireNotNull(parseMoney(amount)){"预算金额需大于0，最多两位小数"},asDefault)}
         if(s.budgets.any{it.period==month.toString()&&it.scope==scope})TextButton(onClick={vm.action("本月设置已移除"){vm.repo.dao.deleteBudget(month.toString(),scope);withContext(Dispatchers.Main){onDismiss()}}},modifier=Modifier.fillMaxWidth()){Text("移除本月单独预算（如有默认则沿用）")}
         if(s.budgets.any{it.period=="*"&&it.scope==scope})TextButton(onClick={vm.action("默认预算已移除"){vm.repo.dao.deleteBudget("*",scope);withContext(Dispatchers.Main){onDismiss()}}},modifier=Modifier.fillMaxWidth()){Text("移除该项默认预算")}
