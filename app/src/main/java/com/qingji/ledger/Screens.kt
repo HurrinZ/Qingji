@@ -29,7 +29,7 @@ import kotlin.math.*
     val month=YearMonth.parse(monthString)
     var openBillId by rememberSaveable{mutableStateOf<String?>(null)}
     val list=remember(s.entries,monthString) { s.live().filter{it.date.startsWith(monthString) && it.date<=LocalDate.now().toString()}.sortedWith(compareByDescending<Entry>{it.date}.thenByDescending{it.time}.thenByDescending{it.createdAt}) }
-    val t=remember(list){totals(list)};val budget=s.budget(monthString);val excluded=s.budgetExcludedAssetIds();val budgetSpent=remember(list,excluded){budgetExpense(list,excluded)}
+    val t=remember(list){totals(list)};val budget=s.budget(monthString);val excluded=s.settings.budgetExcludedEntries;val budgetSpent=remember(list,excluded){budgetExpense(list,excluded)};val excludedCount=remember(list,excluded){s.excludedBudgetEntries(list).size}
     var search by rememberSaveable{mutableStateOf(false)};var query by rememberSaveable{mutableStateOf("")};var count by rememberSaveable{mutableIntStateOf(100)}
     val filtered=remember(list,query,s.categories,s.assets){if(query.isBlank())list else list.filter{(it.note+(s.category(it.categoryId)?.name?:"")+(s.assets.find{a->a.id==it.assetId}?.name?:"")).contains(query,true)}}
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(bottom=20.dp)) {
@@ -54,7 +54,7 @@ import kotlin.math.*
             items(dayEntries,key={it.id}){entry->SwipeBillRow(entry,s,openBillId==entry.id,{openBillId=if(it)entry.id else null},{onEntry(entry)},{openBillId=null;onNote(entry)},{openBillId=null;onDelete(entry)})}
         }
         if(filtered.size>count)item{TextButton(onClick={count+=100},modifier=Modifier.fillMaxWidth()){Text("加载更多 · 共"+filtered.size+"笔")}}
-        if(list.isNotEmpty())item{Hint("结余为本月收入减净支出；退款按发生日冲减支出。"+if(excluded.isNotEmpty())"预算不计入 ${excluded.size} 个已排除账户的支出。" else "",Modifier.padding(20.dp))}
+        if(list.isNotEmpty())item{Hint("结余为本月收入减净支出；退款按发生日冲减支出。"+if(excludedCount>0)"预算不计入 $excludedCount 笔还款或已排除账单。" else "",Modifier.padding(20.dp))}
     }
 }
 
@@ -105,7 +105,7 @@ import kotlin.math.*
 @Composable fun PlansScreen(s:Snapshot,onBudget:(YearMonth,String)->Unit,onGoal:(Goal?)->Unit,onProgress:(Goal,Boolean)->Unit,onHistory:(Goal)->Unit,onDelete:(Goal)->Unit,initialBudget:Boolean=false){
     var segment by rememberSaveable{mutableIntStateOf(if(initialBudget)0 else 0)};var monthString by rememberSaveable{mutableStateOf(YearMonth.now().toString())};val month=YearMonth.parse(monthString)
     val monthEntries=remember(s.entries,monthString){s.live().filter{it.date.startsWith(monthString)&&it.date<=LocalDate.now().toString()}}
-    val excluded=s.budgetExcludedAssetIds()
+    val excluded=s.settings.budgetExcludedEntries
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp,5.dp,20.dp,100.dp),verticalArrangement=Arrangement.spacedBy(15.dp)){
         item{ChoiceRow(listOf("月度预算","攒钱目标"),segment){segment=it}}
         if(segment==0){
@@ -115,7 +115,7 @@ import kotlin.math.*
             val scopes=s.budgets.filter{it.scope.isNotEmpty()&&(it.period==monthString || it.period=="*")}.map{it.scope}.distinct()
             items(scopes,key={it}){scope->BudgetCard(s.category(scope)?.name?:"已归档分类",s.budget(monthString,scope),budgetExpense(monthEntries.filter{it.categoryId==scope},excluded)){onBudget(month,scope)}}
             if(scopes.isEmpty())item{Hint("可以为餐饮、购物等分类分别设定预算。分类预算不要求与总预算相等。")}
-            item{Hint("达到80%时提示预算偏紧，达到100%时显示超支。设置默认预算后，未单独设置的月份自动沿用；可随时单独修改。${if(excluded.isNotEmpty())"当前有 ${excluded.size} 个账户的支出不计入预算，可在预算设置里调整。" else "可在预算设置里排除信用卡、花呗等账户。"}")}
+            item{Hint("达到80%时提示预算偏紧，达到100%时显示超支。设置默认预算后，未单独设置的月份自动沿用；可随时单独修改。记账时标记「还款」或关闭「计入预算」，该笔即不占用预算；可在预算设置里查看并恢复。")}
         }else{
             item{Heading("给未来留一点期待","新建"){onGoal(null)}}
             if(s.goals.isEmpty())item{EmptyState("还没有攒钱目标","从一次旅行、一件心仪的小物开始。","创建目标"){onGoal(null)}}

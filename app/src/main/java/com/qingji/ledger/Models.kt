@@ -38,7 +38,7 @@ data class Goal(@PrimaryKey val id: String = newId(), val title: String, val tar
 @Entity(tableName = "goal_events", indices = [Index("goalId")])
 data class GoalEvent(@PrimaryKey val id: String = newId(), val goalId: String, val amount: Long, val date: String = LocalDate.now().toString(), val note: String = "", val createdAt: Long = System.currentTimeMillis())
 
-data class Settings(val theme: String = "SYSTEM", val enabled: Boolean = false, val time: String = "21:30", val days: Set<Int> = (1..7).toSet(), val skip: Boolean = true, val reminderRevision: Long = 1, val lastSentDate: String = "",val accent:String="SUN", val budgetExcludeCredit:Boolean = true, val budgetExcludedAssets:Set<String> = emptySet())
+data class Settings(val theme: String = "SYSTEM", val enabled: Boolean = false, val time: String = "21:30", val days: Set<Int> = (1..7).toSet(), val skip: Boolean = true, val reminderRevision: Long = 1, val lastSentDate: String = "",val accent:String="SUN", val budgetExcludedEntries:Set<String> = emptySet(), val repaymentEntries:Set<String> = emptySet())
 data class Snapshot(val entries: List<Entry> = emptyList(), val categories: List<Category> = emptyList(), val budgets: List<Budget> = emptyList(), val goals: List<Goal> = emptyList(), val events: List<GoalEvent> = emptyList(), val settings: Settings = Settings(), val ready: Boolean = false, val assets: List<AssetAccount> = emptyList(), val transfers: List<AssetTransfer> = emptyList(), val adjustments: List<AssetAdjustment> = emptyList()) {
     fun category(id: String) = categories.find { it.id == id }
     fun progress(id: String): Long = events.filter { it.goalId == id }.sumOf { it.amount }
@@ -114,10 +114,10 @@ fun nextReminderText(settings: Settings, now: ZonedDateTime = ZonedDateTime.now(
     val next = nextReminder(settings, now) ?: return "暂无下次提醒"
     return "下次提醒：" + next.format(java.time.format.DateTimeFormatter.ofPattern("M月d日 E HH:mm", java.util.Locale.CHINA))
 }
-fun Snapshot.budgetExcludedAssetIds(): Set<String> {
-    val auto = if (settings.budgetExcludeCredit) assets.filter { isCreditAsset(it.kind) }.map { it.id } else emptyList()
-    return (auto + settings.budgetExcludedAssets).toSet()
-}
+/** 预算排除以「账单」为单位：记账时标记还款，或手动关闭「计入预算」。 */
+fun Snapshot.excludedBudgetEntries(entries: List<Entry>): List<Entry> =
+    entries.filter { it.deletedAt == null && it.type == EXPENSE && it.id in settings.budgetExcludedEntries }
+fun Snapshot.isRepayment(entry: Entry): Boolean = entry.id in settings.repaymentEntries
 fun budgetExpense(entries: List<Entry>, excluded: Set<String>): Long {
     if (excluded.isEmpty()) return totals(entries).expense
     val byId = entries.associateBy { it.id }
@@ -125,10 +125,10 @@ fun budgetExpense(entries: List<Entry>, excluded: Set<String>): Long {
     var refunds = 0L
     entries.filter { it.deletedAt == null }.forEach { e ->
         when (e.type) {
-            EXPENSE -> if (e.assetId !in excluded) gross += e.amount
+            EXPENSE -> if (e.id !in excluded) gross += e.amount
             REFUND -> {
                 val origin = e.refundOf?.let { byId[it] }
-                if (origin == null || origin.assetId !in excluded) refunds += e.amount
+                if (origin == null || origin.id !in excluded) refunds += e.amount
             }
         }
     }
