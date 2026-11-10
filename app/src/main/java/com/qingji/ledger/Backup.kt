@@ -81,14 +81,15 @@ object BackupCodec {
             e.id in excludedEntries -> e.copy(inBudget=false)
             else -> e
         }}
-        val assets=if(version<2)emptyList()else list(root,"assets",1000).map{a->AssetAccount(text(a,"id"),text(a,"name",30),text(a,"kind"),long(a,"openingBalance"),a.getBoolean("archived"),long(a,"createdAt"),long(a,"updatedAt"),if(version>=3)normalizePool(a.optString("pool",POOL_LIQUID))else POOL_LIQUID)}
-        unique(assets){it.id};assets.forEach{require(it.name.isNotBlank()&&it.kind in ASSET_KINDS&&it.openingBalance in 0..MAX_MONEY&&it.createdAt>=0&&it.updatedAt>=0){"备份资产信息无效"}}
+        // 旧版没有负号，负债类账户的正期初按「欠款」翻负；负债账户池固定流动资金
+        val assets=(if(version<2)emptyList()else list(root,"assets",1000).map{a->AssetAccount(text(a,"id"),text(a,"name",30),text(a,"kind"),long(a,"openingBalance"),a.getBoolean("archived"),long(a,"createdAt"),long(a,"updatedAt"),if(version>=3)normalizePool(a.optString("pool",POOL_LIQUID))else POOL_LIQUID)}).map{a->when{isDebtKind(a.kind)&&a.openingBalance>0->a.copy(openingBalance=-a.openingBalance,pool=POOL_LIQUID);isDebtKind(a.kind)->a.copy(pool=POOL_LIQUID);else->a}}
+        unique(assets){it.id};assets.forEach{require(it.name.isNotBlank()&&it.kind in ACCOUNT_KINDS&&(if(isDebtKind(it.kind))it.openingBalance in -MAX_MONEY..0 else it.openingBalance in 0..MAX_MONEY)&&it.createdAt>=0&&it.updatedAt>=0){"备份账户信息无效"}}
         val assetIds=assets.map{it.id}.toSet()
         entries.forEach{require(it.assetId==null||it.assetId in assetIds){"备份记账引用的资产不存在"}}
         val transfers=if(version<2)emptyList()else list(root,"transfers").map{a->AssetTransfer(text(a,"id"),text(a,"fromAssetId"),text(a,"toAssetId"),long(a,"amount"),text(a,"date"),text(a,"note",500),long(a,"createdAt"),long(a,"updatedAt"),if(a.isNull("deletedAt"))null else long(a,"deletedAt"))}
         unique(transfers){it.id};transfers.forEach{require(it.fromAssetId in assetIds&&it.toAssetId in assetIds&&it.fromAssetId!=it.toAssetId&&it.amount in 1..MAX_MONEY){"备份转账信息无效"};LocalDate.parse(it.date).also{d->require(!d.isAfter(LocalDate.now())){"备份含未来日期的转账"}};it.deletedAt?.let{v->require(v>=0){"备份删除时间无效"}}}
         val adjustments=if(version<2)emptyList()else list(root,"adjustments").map{a->AssetAdjustment(text(a,"id"),text(a,"assetId"),long(a,"delta"),long(a,"targetBalance"),text(a,"date"),text(a,"note",500),long(a,"createdAt"),long(a,"updatedAt"),if(a.isNull("deletedAt"))null else long(a,"deletedAt"))}
-        unique(adjustments){it.id};adjustments.forEach{require(it.assetId in assetIds&&it.delta!=0L&&it.delta!=Long.MIN_VALUE&&it.targetBalance in 0..MAX_MONEY){"备份余额校准无效"};LocalDate.parse(it.date).also{d->require(!d.isAfter(LocalDate.now())){"备份含未来日期的校准"}};it.deletedAt?.let{v->require(v>=0){"备份删除时间无效"}}}
+        unique(adjustments){it.id};adjustments.forEach{require(it.assetId in assetIds&&it.delta!=0L&&it.delta!=Long.MIN_VALUE&&it.targetBalance in -MAX_MONEY..MAX_MONEY){"备份余额校准无效"};LocalDate.parse(it.date).also{d->require(!d.isAfter(LocalDate.now())){"备份含未来日期的校准"}};it.deletedAt?.let{v->require(v>=0){"备份删除时间无效"}}}
         val snapshot=Snapshot(entries,cats,budgets,goals,events,Settings(theme=theme,enabled=p.getBoolean("enabled"),time=time,days=days,skip=p.getBoolean("skip"),accent=normalizeAccent(accent),budgetExcludedEntries=excludedEntries,repaymentEntries=repayments),true,assets,transfers,adjustments)
         val balances=snapshot.assetBalances();snapshot.assetTotal();require(assets.filter{it.archived}.all{balances[it.id]==0L}){"已归档资产的余额应为0"}
         return snapshot

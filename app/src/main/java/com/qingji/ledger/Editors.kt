@@ -51,6 +51,7 @@ import java.time.*
     var more by rememberSaveable(entry?.id){mutableStateOf(false)}
     val parsed=keypadMoney(amount)
     val after=if(assetId!=null&&parsed!=null&&affectsBalance){val changed=(entry?:Entry(type=type,amount=parsed,categoryId=catId)).copy(type=type,amount=parsed,assetId=assetId,affectsBalance=true);s.projectedBalance(assetId!!,entry?.takeIf{old->s.entries.any{it.id==old.id}},changed)}else null
+    val linkedDebt=assetId?.let{id->s.assets.find{it.id==id}?.let{isDebtKind(it.kind)}}?:false
     FastInputSheet(if(type==REFUND)"退款" else if(entry!=null)"编辑账单" else "记一笔",onDismiss,form={
         if(type!=REFUND){
             ChoiceRow(listOf("支出","收入"),if(type==INCOME)1 else 0){i->type=if(i==1)INCOME else EXPENSE;catId=s.categories.firstOrNull{it.type==type&&!it.archived}?.id?:""}
@@ -87,9 +88,9 @@ import java.time.*
             if(assetId!=null&&!affectsBalance)Text("仅关联",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
             TextButton(onClick={more=!more}){Text("更多");Icon(if(more)Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,null,Modifier.size(17.dp))}
         }
-        if(after!=null&&after<0)Text("余额不足 · 保存后 ¥"+money(after),style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.error)
+        if(after!=null&&after<0)Text(if(linkedDebt)"保存后欠款 ¥"+money(kotlin.math.abs(after)) else "余额不足 · 保存后 ¥"+money(after),style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.error)
         if(more){
-            if(assetId!=null){Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Text("同步余额",Modifier.weight(1f));InfoHint("同步余额","旧账若已包含在当前余额中，请保持关闭，避免重复扣减。关闭时仅关联账户。新记账默认开启。");Switch(affectsBalance,{affectsBalance=it})};if(after!=null&&after>=0)Hint("保存后余额 ¥"+money(after))}
+            if(assetId!=null){Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Text("同步余额",Modifier.weight(1f));InfoHint("同步余额","旧账若已包含在当前余额中，请保持关闭，避免重复扣减。关闭时仅关联账户。新记账默认开启。");Switch(affectsBalance,{affectsBalance=it})};if(after!=null&&after>=0)Hint(if(linkedDebt)"保存后已结清 · 溢缴 ¥"+money(after) else "保存后余额 ¥"+money(after))}
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){TextButton(onClick={pickTime(context,time){time=it}}){Icon(Icons.Outlined.Schedule,null,Modifier.size(17.dp));Spacer(Modifier.width(6.dp));Text(time)};Spacer(Modifier.weight(1f));if(entry==null){Text("连续记账",style=MaterialTheme.typography.labelMedium);Switch(continueAdding,{continueAdding=it})}}
             if(entry!=null&&s.entries.any{it.id==entry.id}){
                 if(entry.type==EXPENSE){val refunded=s.live().filter{it.refundOf==entry.id}.sumOf{it.amount};TextButton(onClick={onRefund(entry)},enabled=refunded<entry.amount){Text(if(refunded==0L)"退款" else "继续退款 · 已退 ¥"+money(refunded))}}

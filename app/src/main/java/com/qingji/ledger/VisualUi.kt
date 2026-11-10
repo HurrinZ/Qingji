@@ -29,11 +29,12 @@ import kotlin.math.roundToInt
 }
 @Composable fun AssetBadge(kind:String,side:Dp=40.dp){
     val brand=kind=="WECHAT"||kind=="ALIPAY"
-    val bg=when(kind){"WECHAT"->Color(0xFF07C160);"ALIPAY"->Color.White;"BANK"->MaterialTheme.colorScheme.surfaceContainer;"CASH"->Color(0xFFE9F5EC);"CREDIT_CARD"->Color(0xFFFDEDE6);"HUABEI"->Color(0xFFE7F1FF);"CREDIT"->Color(0xFFF1EBFA);else->MaterialTheme.colorScheme.surfaceContainer}
+    val debt=isDebtKind(kind)
+    val bg=when(kind){"WECHAT"->Color(0xFF07C160);"ALIPAY"->Color.White;"BANK"->MaterialTheme.colorScheme.surfaceContainer;"CASH"->Color(0xFFE9F5EC);"CREDIT_CARD"->Color(0xFFFDEDE6);"HUABEI"->Color(0xFFE7F1FF);"CREDIT"->Color(0xFFF1EBFA);"DEBT_OTHER"->Color(0xFFFBE9E7);else->MaterialTheme.colorScheme.surfaceContainer}
     Surface(shape=RoundedCornerShape(side*.28f),color=bg,modifier=Modifier.size(side)){
         Box(contentAlignment=Alignment.Center){
-            if(brand)Icon(painterResource(if(kind=="WECHAT")R.drawable.ic_wechat else R.drawable.ic_alipay),ASSET_KINDS[kind],Modifier.size(side*.7f),tint=Color.Unspecified)
-            else Icon(when(kind){"BANK"->Icons.Outlined.AccountBalance;"CASH"->Icons.Outlined.Payments;"CREDIT_CARD","HUABEI","CREDIT"->Icons.Outlined.CreditCard;else->Icons.Outlined.AccountBalanceWallet},ASSET_KINDS[kind]?:"其他",Modifier.size(side*.58f),tint=if(kind=="CASH")Color(0xFF287747)else MaterialTheme.colorScheme.onSurfaceVariant)
+            if(brand)Icon(painterResource(if(kind=="WECHAT")R.drawable.ic_wechat else R.drawable.ic_alipay),ACCOUNT_KINDS[kind],Modifier.size(side*.7f),tint=Color.Unspecified)
+            else Icon(when(kind){"BANK"->Icons.Outlined.AccountBalance;"CASH"->Icons.Outlined.Payments;"CREDIT_CARD","HUABEI","CREDIT","DEBT_OTHER"->Icons.Outlined.CreditCard;else->Icons.Outlined.AccountBalanceWallet},ACCOUNT_KINDS[kind]?:"其他",Modifier.size(side*.58f),tint=when{kind=="CASH"->Color(0xFF287747);debt->MaterialTheme.colorScheme.error;else->MaterialTheme.colorScheme.onSurfaceVariant})
         }
     }
 }
@@ -75,12 +76,12 @@ import kotlin.math.roundToInt
                 Surface(shape=CircleShape,color=sliceColor(i),modifier=Modifier.size(7.dp)){}
                 AssetBadge(slice.id,20.dp);Text(slice.label,Modifier.weight(1f),fontSize=12.sp);Text("${(share*100).roundToInt()}%",fontSize=12.sp)
             }}
-            if(shares.isEmpty())Hint("正余额账户 0 个")
+            if(shares.isEmpty())Hint("资产账户暂无正余额")
         }
     }
     if(debts.isNotEmpty()){
         HorizontalDivider(Modifier.padding(vertical=4.dp))
-        Text("另有负债 ¥"+money(s.assetDebtTotal())+" · ${debts.size} 个账户（不计入总资产）",color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.labelSmall)
+        Text("负债合计 ¥"+money(s.assetDebtTotal())+" · ${debts.size} 个负债账户（不计入总资产）",color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.labelSmall)
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(16.dp)){
             RingChart(debts,"负债构成",debt=true,emptyLabel="暂无负债")
             Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(10.dp)){
@@ -92,7 +93,7 @@ import kotlin.math.roundToInt
                 }}
             }
         }
-        Hint("总资产只累加正余额账户；负债在这里单独列出，不与资产相抵。")
+        Hint("资产与负债按账户类型区分：总资产只累加资产账户的正余额，负债在这里单独列出，不与资产相抵。")
     }
 }
 @Composable fun BudgetRing(spent:Long,limit:Long){

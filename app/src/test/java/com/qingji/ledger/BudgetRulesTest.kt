@@ -88,9 +88,12 @@ class BudgetRulesTest {
         assertFalse(s.isRepayment(entries[0]))
     }
 
-    @Test fun creditAssetKindsRemainAvailableAsAccountLabels() {
-        assertTrue(isCreditAsset("CREDIT_CARD")); assertTrue(isCreditAsset("HUABEI")); assertTrue(isCreditAsset("CREDIT"))
-        assertFalse(isCreditAsset("BANK")); assertFalse(isCreditAsset("OTHER"))
-        assertEquals("信用卡", ASSET_KINDS["CREDIT_CARD"]); assertEquals("花呗", ASSET_KINDS["HUABEI"])
+    @Test fun accountKindsAreSplitIntoAssetAndDebtGroups() {
+        assertTrue(isDebtKind("CREDIT_CARD")); assertTrue(isDebtKind("HUABEI")); assertTrue(isDebtKind("CREDIT")); assertTrue(isDebtKind("DEBT_OTHER"))
+        assertFalse(isDebtKind("BANK")); assertFalse(isDebtKind("OTHER")); assertFalse(isDebtKind("CASH"))
+        assertEquals(listOf("银行卡", "微信", "支付宝", "现金", "其他"), ASSET_KINDS.values.toList())
+        assertEquals(listOf("信用卡", "花呗", "信用支付", "其他"), DEBT_KINDS.values.toList())
+        assertEquals("信用卡", ACCOUNT_KINDS["CREDIT_CARD"])
+        assertEquals("其他负债", accountKindLabel("DEBT_OTHER"))
     }
 }

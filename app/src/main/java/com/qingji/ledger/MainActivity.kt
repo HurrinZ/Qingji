@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
         Scaffold(containerColor=MaterialTheme.colorScheme.background,snackbarHost={SnackbarHost(snack)},topBar={
             Surface(color=if(page==0)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,contentColor=if(page==0)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface){Row(Modifier.statusBarsPadding().fillMaxWidth().height(56.dp).padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically){
                 if(page==3)IconButton(onClick={page=4}){Icon(Icons.Outlined.ArrowBack,"返回我的")}
-                Text(listOf("轻记","收支图表","我的资产","预算与攒钱","我的")[page],Modifier.weight(1f),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
+                Text(listOf("轻记","收支图表","资产与负债","预算与攒钱","我的")[page],Modifier.weight(1f),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
                 if(page==0)Text("认真生活，轻松记账",style=MaterialTheme.typography.labelSmall)
             }}
         },bottomBar={NavigationBar(containerColor=MaterialTheme.colorScheme.surface){
@@ -85,10 +85,10 @@ class MainActivity : ComponentActivity() {
             "asset_edit"->AssetEditor(editingAsset,s,vm,dismiss)
             "asset_calibrate"->editingAsset?.let{CalibrationEditor(it,s,vm,dismiss)}
             "transfer"->TransferEditor(editingTransfer,preferredTransferSource,s,vm,dismiss)
-            "asset_details"->editingAsset?.let{asset->AssetDetails(asset,s,vm,dismiss,{editor="asset_edit"},{editor="asset_calibrate"},{selectedTransferId=null;preferredTransferSource=asset.id;editor="transfer"},{entry->selectedEntryId=entry.id;refundOriginalId=null;editor="entry"},{transfer->selectedTransferId=transfer.id;editor="transfer"})}
+            "asset_details"->editingAsset?.let{asset->AssetDetails(asset,s,vm,dismiss,{editor="asset_edit"},{editor="asset_calibrate"},{source->selectedTransferId=null;preferredTransferSource=source;editor="transfer"},{entry->selectedEntryId=entry.id;refundOriginalId=null;editor="entry"},{transfer->selectedTransferId=transfer.id;editor="transfer"})}
         }
         noteEntryId?.let{id->s.live().find{it.id==id}?.let{EntryNoteDialog(it,vm){noteEntryId=null}}}
-        pendingRestore?.let{backup->AlertDialog(onDismissRequest={vm.cancelRestore()},title={Text(if(restoreIsRecovery)"恢复导入前快照？" else "确认恢复备份？")},text={Column(verticalArrangement=Arrangement.spacedBy(10.dp)){Text("备份包含：\n${backup.entries.count{it.deletedAt==null}}笔收支\n${backup.assets.size}个资产账户\n${backup.transfers.count{it.deletedAt==null}}笔转账\n${backup.categories.size}个分类\n${backup.goals.size}个攒钱目标\n${backup.budgets.size}项预算");Text("恢复将替换当前账本与资产。会先保存当前数据快照；恢复后提醒默认关闭。重复恢复同一文件不会重复入账。");if(backup.assets.isEmpty())Hint("此备份不含资产账户；恢复后旧账不会关联或扣减资产。");restoreError?.let{Text(it,color=MaterialTheme.colorScheme.error)}}},confirmButton={TextButton(enabled=!restoreBusy,onClick={vm.performRestore()}){Text(if(restoreBusy)"正在恢复…" else "确认替换")}},dismissButton={TextButton(enabled=!restoreBusy,onClick={vm.cancelRestore()}){Text("取消")}})}
+        pendingRestore?.let{backup->AlertDialog(onDismissRequest={vm.cancelRestore()},title={Text(if(restoreIsRecovery)"恢复导入前快照？" else "确认恢复备份？")},text={Column(verticalArrangement=Arrangement.spacedBy(10.dp)){Text("备份包含：\n${backup.entries.count{it.deletedAt==null}}笔收支\n${backup.assets.size}个账户\n${backup.transfers.count{it.deletedAt==null}}笔转账\n${backup.categories.size}个分类\n${backup.goals.size}个攒钱目标\n${backup.budgets.size}项预算");Text("恢复将替换当前账本与资产。会先保存当前数据快照；恢复后提醒默认关闭。重复恢复同一文件不会重复入账。");if(backup.assets.isEmpty())Hint("此备份不含资产账户；恢复后旧账不会关联或扣减资产。");restoreError?.let{Text(it,color=MaterialTheme.colorScheme.error)}}},confirmButton={TextButton(enabled=!restoreBusy,onClick={vm.performRestore()}){Text(if(restoreBusy)"正在恢复…" else "确认替换")}},dismissButton={TextButton(enabled=!restoreBusy,onClick={vm.cancelRestore()}){Text("取消")}})}
         deleteGoal?.let{goal->AlertDialog(onDismissRequest={deleteGoal=null},title={Text("删除这个攒钱目标？")},text={Text("将同时删除“${goal.title}”的进度历史。删除后可在短时提示中撤销。")},confirmButton={TextButton(onClick={vm.removeGoal(goal);deleteGoal=null}){Text("删除",color=MaterialTheme.colorScheme.error)}},dismissButton={TextButton(onClick={deleteGoal=null}){Text("取消")}})}
     }
 }

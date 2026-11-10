@@ -26,7 +26,7 @@ class FastInputTest{
         assertEquals(listOf("ALIPAY","WECHAT"),shares.map{it.first.id})
         assertEquals(.75f,shares[0].second,.0001f);assertEquals(.25f,shares[1].second,.0001f)
         assertEquals(40000L,s.assetTotal())           // 总资产只累加正余额
-        assertEquals(1000L,s.assetDebtTotal())         // 负债单独统计，不冲减总资产
+        assertEquals(0L,s.assetDebtTotal())            // 资产类账户的负余额不算负债，负债只看负债类账户
         assertEquals(-1000L,s.assetBalances()[d.id])
     }
     @Test fun emptyAndInvalidChartValuesNeverProduceInvalidPercentages(){

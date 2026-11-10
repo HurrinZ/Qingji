@@ -63,6 +63,13 @@ class Repository(val context: Context, val db: LedgerDatabase = LedgerDatabase.c
     suspend fun initialize() {
         db.withTransaction { if (dao.categories().isEmpty()) dao.putCategories(defaultCategories()) }
         migrateV3Flags()
+        normalizeLegacyDebtBalances()
+    }
+    /** 旧版键盘没有负号，负债类账户可能被建成正期初。按「欠款」翻负；条件本身幂等，无需打标。 */
+    private suspend fun normalizeLegacyDebtBalances() = db.withTransaction {
+        dao.assets().filter { isDebtKind(it.kind) && it.openingBalance > 0 }.forEach {
+            dao.putAsset(it.copy(openingBalance = -it.openingBalance, updatedAt = System.currentTimeMillis()))
+        }
     }
     /** 旧版把预算标记放在 DataStore。升级到 v3 后搬进 Room 的 entries 表，与账单本身同库同事务。 */
     private suspend fun migrateV3Flags() {
