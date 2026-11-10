@@ -25,7 +25,9 @@ class FastInputTest{
         val shares=chartShares(s.assetSlices())
         assertEquals(listOf("ALIPAY","WECHAT"),shares.map{it.first.id})
         assertEquals(.75f,shares[0].second,.0001f);assertEquals(.25f,shares[1].second,.0001f)
-        assertEquals(39000L,s.assetTotal())
+        assertEquals(40000L,s.assetTotal())           // 总资产只累加正余额
+        assertEquals(1000L,s.assetDebtTotal())         // 负债单独统计，不冲减总资产
+        assertEquals(-1000L,s.assetBalances()[d.id])
     }
     @Test fun emptyAndInvalidChartValuesNeverProduceInvalidPercentages(){
         assertTrue(chartShares(emptyList()).isEmpty())

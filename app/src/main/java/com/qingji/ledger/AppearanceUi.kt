@@ -44,11 +44,11 @@ fun categoryVector(name:String):ImageVector=when {
 @Composable fun AmountKeypad(onKey:(String)->Unit){
     Column(verticalArrangement=Arrangement.spacedBy(5.dp)){
         listOf(listOf("1","2","3"),listOf("4","5","6"),listOf("7","8","9"),listOf(".","0","DEL")).forEach{row->Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){row.forEach{key->
-            Surface(onClick={onKey(key)},modifier=Modifier.weight(1f).height(47.dp),shape=RoundedCornerShape(10.dp),color=MaterialTheme.colorScheme.surfaceContainerLow){Box(contentAlignment=Alignment.Center){if(key=="DEL")Icon(Icons.Outlined.Backspace,"删除一位")else Text(key,fontSize=23.sp)}}
+            Surface(onClick={onKey(key)},modifier=Modifier.weight(1f).height(48.dp),shape=RoundedCornerShape(10.dp),color=MaterialTheme.colorScheme.surfaceContainerLow){Box(contentAlignment=Alignment.Center){if(key=="DEL")Icon(Icons.Outlined.Backspace,"删除一位")else Text(key,fontSize=23.sp)}}
         }}}
     }
 }
-@Composable fun CompactAssetChoice(title:String,s:Snapshot,selectedId:String?,onSelect:(String?)->Unit,includeNone:Boolean=true){
+@Composable fun CompactAssetChoice(title:String,s:Snapshot,selectedId:String?,onSelect:(String?)->Unit,includeNone:Boolean=true,pool:String?=null){
     var expanded by remember{mutableStateOf(false)}
     val asset=s.assets.find{it.id==selectedId}
     Box{
@@ -59,7 +59,7 @@ fun categoryVector(name:String):ImageVector=when {
         }
         DropdownMenu(expanded=expanded,onDismissRequest={expanded=false},modifier=Modifier.heightIn(max=300.dp)){
             if(includeNone)DropdownMenuItem(text={Text("不关联资产")},onClick={onSelect(null);expanded=false})
-            s.assets.filter{!it.archived||it.id==selectedId}.forEach{a->DropdownMenuItem(leadingIcon={AssetBadge(a.kind,28.dp)},text={Column{Text(a.name+if(a.archived)"（已归档）" else "");Hint("余额 ¥"+money(s.assetBalances()[a.id]?:0))}},onClick={onSelect(a.id);expanded=false})}
+            s.assets.filter{(!it.archived||it.id==selectedId)&&(pool==null||normalizePool(it.pool)==pool)}.forEach{a->DropdownMenuItem(leadingIcon={AssetBadge(a.kind,28.dp)},text={Column{Text(a.name+if(a.archived)"（已归档）" else "");Hint(poolLabel(a.pool)+" · 余额 ¥"+money(s.assetBalances()[a.id]?:0))}},onClick={onSelect(a.id);expanded=false})}
         }
     }
 }

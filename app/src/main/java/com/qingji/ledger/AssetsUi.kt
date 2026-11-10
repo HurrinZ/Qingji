@@ -23,16 +23,20 @@ import androidx.room.withTransaction
 import java.time.*
 import kotlin.math.abs
 
-@Composable fun AssetChoice(title:String,s:Snapshot,selected:String?,onSelect:(String?)->Unit,includeNone:Boolean=true){
-    CompactAssetChoice(title,s,selected,onSelect,includeNone)
+@Composable fun AssetChoice(title:String,s:Snapshot,selected:String?,onSelect:(String?)->Unit,includeNone:Boolean=true,pool:String?=null){
+    CompactAssetChoice(title,s,selected,onSelect,includeNone,pool)
 }
 @Composable fun AssetsScreen(s:Snapshot,onCreate:()->Unit,onDetails:(AssetAccount)->Unit,onTransfer:()->Unit){
     var archived by rememberSaveable{mutableStateOf(false)}
     val balances=remember(s.assets,s.entries,s.transfers,s.adjustments){s.assetBalances()};val active=s.assets.filter{!it.archived}
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp,5.dp,16.dp,24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
         item{Panel{
-            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Text("总资产",Modifier.weight(1f),style=MaterialTheme.typography.labelMedium);InfoHint("资产说明","手动记录本地余额，不连接支付平台。旧账默认不扣减新增余额；转账、期初和校准不计收支。")}
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Text("总资产",Modifier.weight(1f),style=MaterialTheme.typography.labelMedium);InfoHint("资产说明","总资产只累加余额为正的账户，分为流动资金与理财资金；负债账户不冲减总资产，另在下方单独列出。手动记录本地余额，不连接支付平台。旧账默认不扣减新增余额；转账、期初和校准不计收支。")}
             MoneyText(s.assetTotal(),size=34.sp)
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){
+                Column(Modifier.weight(1f)){Hint(poolLabel(POOL_LIQUID));Text("¥"+money(s.assetTotal(POOL_LIQUID)),fontSize=17.sp,fontWeight=FontWeight.Medium)}
+                Column(Modifier.weight(1f)){Hint(poolLabel(POOL_INVEST));Text("¥"+money(s.assetTotal(POOL_INVEST)),fontSize=17.sp,fontWeight=FontWeight.Medium)}
+            }
             if(active.isNotEmpty())AssetDistribution(s)
             OutlinedButton(onClick=onTransfer,enabled=active.size>=2,modifier=Modifier.fillMaxWidth()){Icon(Icons.Outlined.SwapHoriz,null,Modifier.size(19.dp));Spacer(Modifier.width(8.dp));Text("转账")}
         }}
@@ -42,7 +46,7 @@ import kotlin.math.abs
         items(shown,key={it.id}){asset->Panel(Modifier.clickable{onDetails(asset)}){
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
                 AssetBadge(asset.kind)
-                Column(Modifier.weight(1f)){Text(asset.name,fontWeight=FontWeight.Medium,maxLines=1);if((balances[asset.id]?:0)<0)Text("余额为负",color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.labelSmall)}
+                Column(Modifier.weight(1f)){Text(asset.name,fontWeight=FontWeight.Medium,maxLines=1);Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){Text(poolLabel(asset.pool),color=MaterialTheme.colorScheme.onSurfaceVariant,style=MaterialTheme.typography.labelSmall,maxLines=1);if((balances[asset.id]?:0)<0)Text("余额为负",color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.labelSmall)}}
                 Text("¥"+money(balances[asset.id]?:0),fontSize=19.sp,fontWeight=FontWeight.Medium,color=if((balances[asset.id]?:0)<0)MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 Icon(Icons.Outlined.ChevronRight,null,Modifier.size(16.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -51,18 +55,21 @@ import kotlin.math.abs
 }
 @Composable fun AssetEditor(asset:AssetAccount?,s:Snapshot,vm:LedgerViewModel,onDismiss:()->Unit){
     var name by rememberSaveable(asset?.id){mutableStateOf(asset?.name?:"")};var kind by rememberSaveable(asset?.id){mutableStateOf(asset?.kind?:"BANK")};var amount by rememberSaveable(asset?.id){mutableStateOf("")};var rename by rememberSaveable{mutableStateOf(false)}
+    var pool by rememberSaveable(asset?.id){mutableStateOf(normalizePool(asset?.pool?:POOL_LIQUID))}
     val displayName=name.ifBlank{suggestedAssetName(kind,s.assets)}
     val value=parseBalance(amount.ifBlank{"0"}.trimEnd('.'))
     val form:@Composable ColumnScope.()->Unit={
         AssetKindPicker(kind){kind=it}
+        ChoiceRow(ASSET_POOLS.values.toList(),ASSET_POOLS.keys.indexOf(pool)){i->pool=ASSET_POOLS.keys.elementAt(i)}
+        Hint(if(pool==POOL_INVEST)"归入理财资金：只有理财账单能关联此账户；换池会同步更新该账户已有账单。" else "归入流动资金：只有流动账单能关联此账户；换池会同步更新该账户已有账单。")
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Text(displayName,Modifier.weight(1f),fontWeight=FontWeight.Medium);IconButton(onClick={rename=true}){Icon(Icons.Outlined.Edit,"修改账户名称",Modifier.size(18.dp))};InfoHint("资产账户","名称自动填写，可点击铅笔修改。当前余额作为期初，不算收入。旧账若已包含在余额中，请勿再次开启余额联动。这里只记录账面余额，不实际扣款。")}
         if(asset==null){Hint("当前余额");AmountDisplay(amount){amount=""}}
         else {Hint("期初余额");MoneyText(asset.openingBalance,size=28.sp)}
     }
     if(asset==null)FastInputSheet("添加资产",onDismiss,form=form,footer={
         AmountKeypad{amount=keypadInput(amount,it)}
-        SubmitButton(enabled=value!=null,done={onDismiss();vm.notify("已添加")}){vm.repo.saveAsset(AssetAccount(name=displayName.trim(),kind=kind,openingBalance=requireNotNull(value)))}
-    })else EditorSheet("编辑账户",onDismiss){form();SubmitButton(done={onDismiss();vm.notify("已保存")}){vm.repo.saveAsset(asset.copy(name=displayName.trim(),kind=kind))}}
+        SubmitButton(enabled=value!=null,done={onDismiss();vm.notify("已添加")}){vm.repo.saveAsset(AssetAccount(name=displayName.trim(),kind=kind,openingBalance=requireNotNull(value),pool=pool))}
+    })else EditorSheet("编辑账户",onDismiss){form();SubmitButton(done={onDismiss();vm.notify("已保存")}){vm.repo.saveAsset(asset.copy(name=displayName.trim(),kind=kind,pool=pool))}}
     if(rename)TextInputDialog("账户名称",displayName,30,{rename=false},{name=it.trim()})
 }
 @Composable fun CalibrationEditor(asset:AssetAccount,s:Snapshot,vm:LedgerViewModel,onDismiss:()->Unit){

@@ -5,6 +5,11 @@ import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+const val POOL_LIQUID = "LIQUID"
+const val POOL_INVEST = "INVEST"
+val ASSET_POOLS = linkedMapOf(POOL_LIQUID to "流动资金", POOL_INVEST to "理财资金")
+fun normalizePool(pool:String):String = if(pool==POOL_INVEST)POOL_INVEST else POOL_LIQUID
+fun poolLabel(pool:String):String = ASSET_POOLS[normalizePool(pool)]?:"流动资金"
 val ASSET_KINDS = linkedMapOf("BANK" to "银行卡", "WECHAT" to "微信", "ALIPAY" to "支付宝", "CASH" to "现金", "OTHER" to "其他", "CREDIT_CARD" to "信用卡", "HUABEI" to "花呗", "CREDIT" to "信用支付")
 val CREDIT_ASSET_KINDS = setOf("CREDIT_CARD", "HUABEI", "CREDIT")
 fun isCreditAsset(kind:String):Boolean = kind in CREDIT_ASSET_KINDS
@@ -12,7 +17,7 @@ fun assetIcon(kind:String):String=when(kind){"BANK"->"▤";"WECHAT"->"聊";"ALIP
 fun parseBalance(raw:String):Long? = if(raw.trim().matches(Regex("0(\\.0{1,2})?")))0 else parseMoney(raw)
 
 @Entity(tableName="asset_accounts")
-data class AssetAccount(@PrimaryKey val id:String=newId(),val name:String,val kind:String="BANK",val openingBalance:Long=0,val archived:Boolean=false,val createdAt:Long=System.currentTimeMillis(),val updatedAt:Long=System.currentTimeMillis())
+data class AssetAccount(@PrimaryKey val id:String=newId(),val name:String,val kind:String="BANK",val openingBalance:Long=0,val archived:Boolean=false,val createdAt:Long=System.currentTimeMillis(),val updatedAt:Long=System.currentTimeMillis(),@ColumnInfo(defaultValue = "'LIQUID'") val pool:String=POOL_LIQUID)
 @Entity(tableName="asset_transfers",indices=[Index("fromAssetId"),Index("toAssetId"),Index("date")])
 data class AssetTransfer(@PrimaryKey val id:String=newId(),val fromAssetId:String,val toAssetId:String,val amount:Long,val date:String=LocalDate.now().toString(),val note:String="",val createdAt:Long=System.currentTimeMillis(),val updatedAt:Long=System.currentTimeMillis(),val deletedAt:Long?=null)
 @Entity(tableName="asset_adjustments",indices=[Index("assetId"),Index("date")])
@@ -31,7 +36,22 @@ fun Snapshot.assetBalances():Map<String,Long>{
     adjustments.filter{it.deletedAt==null}.forEach{a->add(a.assetId,a.delta)}
     return result
 }
-fun Snapshot.assetTotal():Long{val balances=assetBalances();return assets.filter{!it.archived}.fold(0L){sum,a->Math.addExact(sum,balances.getValue(a.id))}}
+/** 总资产只累加余额为正的账户；负债账户不冲减总资产，单独见 assetDebtTotal / debtSlices。
+ *  传 pool 可只看某个资金池（LIQUID / INVEST），不传则两池合计。 */
+fun Snapshot.assetTotal(pool:String?=null):Long{
+    val balances=assetBalances()
+    return assets.filter{!it.archived&&(pool==null||normalizePool(it.pool)==pool)}.fold(0L){sum,a->Math.addExact(sum,(balances[a.id]?:0L).coerceAtLeast(0L))}
+}
+/** 负债合计：未归档账户中负余额的绝对值之和（返回正数）。 */
+fun Snapshot.assetDebtTotal(pool:String?=null):Long{
+    val balances=assetBalances()
+    return assets.filter{!it.archived&&(pool==null||normalizePool(it.pool)==pool)}.fold(0L){sum,a->Math.addExact(sum,(-(balances[a.id]?:0L)).coerceAtLeast(0L))}
+}
+/** 未归档的负债账户（余额为负），按欠款金额从大到小。 */
+fun Snapshot.debtAccounts():List<Pair<AssetAccount,Long>>{
+    val balances=assetBalances()
+    return assets.filter{!it.archived&&(balances[it.id]?:0L)<0}.map{it to -(balances.getValue(it.id))}.sortedByDescending{it.second}
+}
 fun Snapshot.defaultAssetId():String?{val ids=assets.filter{!it.archived}.map{it.id}.toSet();return live().filter{it.assetId in ids}.maxByOrNull{it.createdAt}?.assetId?:assets.firstOrNull{!it.archived}?.id}
 fun Snapshot.projectedBalance(assetId:String,before:Entry?,after:Entry):Long{
     var result=assetBalances()[assetId]?:0L
@@ -49,7 +69,14 @@ suspend fun Repository.saveAsset(asset:AssetAccount)=db.withTransaction{
     val old=dao.asset(asset.id)
     require(old==null||old.openingBalance==asset.openingBalance){"期初余额不能直接修改，请使用校准余额"}
     require(dao.assets().none{it.id!=asset.id&&!it.archived&&it.name==asset.name}){"资产名称已存在，请用备注或卡号末四位区分"}
-    dao.putAsset(asset.copy(updatedAt=System.currentTimeMillis()))
+    val normalized=asset.copy(pool=normalizePool(asset.pool),updatedAt=System.currentTimeMillis())
+    dao.putAsset(normalized)
+    // 账户换资金池时，挂在该账户上的账单一起换，避免账单与账户口径不一致
+    if(old!=null&&normalizePool(old.pool)!=normalizePool(normalized.pool)){
+        dao.entries().filter{it.assetId==asset.id&&normalizePool(it.pool)!=normalizePool(normalized.pool)}.forEach{
+            dao.putEntry(it.copy(pool=normalizePool(normalized.pool),updatedAt=System.currentTimeMillis()))
+        }
+    }
 }
 suspend fun Repository.archiveAsset(id:String,archive:Boolean)=db.withTransaction{
     val asset=requireNotNull(dao.asset(id)){"资产不存在"}
